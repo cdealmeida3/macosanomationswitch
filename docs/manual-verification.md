@@ -6,7 +6,7 @@ Record each result as ✅ (works), ❌ (does nothing) or a short note. Any row m
 
 ## Before you start
 
-1. Build and open the app (see the [README](../README.md#build-and-run-from-source)).
+1. Install the release you're testing from its `.dmg` (see the [README](../README.md#download)), and run the Install rows below. Building from source ([README](../README.md#build-and-run-from-source)) also works for the other rows.
 2. Write down which release and build you're on: `sw_vers`.
 3. Save your current values so you can compare later:
    ```sh
@@ -21,6 +21,18 @@ Record each result as ✅ (works), ❌ (does nothing) or a short note. Any row m
    printf 'DisableAllAnimations: '; defaults read com.apple.finder DisableAllAnimations 2>/dev/null || echo absent
    ```
 4. Check every toggle, including Smooth scrolling.
+
+## Install
+
+Run these once per release, on a Mac that has never opened that version. Use a copy downloaded with a browser, so macOS quarantines it like it would for anyone else.
+
+| # | Check | macOS 26 Tahoe | macOS 27 Golden Gate |
+|---|---|---|---|
+| I1 | **The disk image opens.** `Animation-Switch.dmg` mounts as "Animation Switch X.Y.Z" and shows the app next to an Applications shortcut. `shasum -a 256 -c Animation-Switch.dmg.sha256` says OK. | | |
+| I2 | **Drag to Applications works.** Dragging the app onto the shortcut copies it to /Applications. | | |
+| I3 | **First launch works as the README says.** Opening it is blocked once, Open Anyway in Privacy & Security allows it, and it opens normally after that. It never says the app "is damaged". | | |
+| I4 | **Launch at login after the move.** In System Settings → General → Login Items, the entry is the copy in /Applications. Log out and back in: the app is running. | | |
+| I5 | **Version.** Finder → Get Info on the app shows the release's version. | | |
 
 ## Each animation
 

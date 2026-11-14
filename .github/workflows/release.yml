@@ -1,0 +1,102 @@
+name: Release
+
+# Publishes release vX.Y.Z with Animation-Switch.dmg when a merged PR changes
+# VERSION. "Run workflow" on main does the same, to retry a failed release.
+# See docs/release-plan.md. Never bump VERSION from inside a workflow: a push
+# made with the workflow's own token does not trigger this workflow.
+on:
+  push:
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish the release
+    runs-on: macos-26
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Refuse anything but main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "Releases are only published from main, not ${GITHUB_REF}." >&2
+          exit 1
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Read VERSION
+        id: version
+        run: |
+          version=$(tr -d '[:space:]' < VERSION)
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "VERSION must look like X.Y.Z, but it is '$version'." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$version is already released"
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Releasing v$version"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Show the toolchain
+        if: steps.version.outputs.released == 'false'
+        run: sw_vers && xcodebuild -version && swift --version
+
+      - name: Run the tests
+        if: steps.version.outputs.released == 'false'
+        run: swift test
+
+      - name: Build the app
+        if: steps.version.outputs.released == 'false'
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          brew install xcodegen
+          ./scripts/build-app.sh
+
+      - name: Make the disk image
+        if: steps.version.outputs.released == 'false'
+        run: ./scripts/make-dmg.sh
+
+      - name: Verify the disk image
+        if: steps.version.outputs.released == 'false'
+        run: ./scripts/verify-dmg.sh
+
+      - name: Write the release notes
+        if: steps.version.outputs.released == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sed "s/{{VERSION}}/$VERSION/g" .github/release-notes.md > build/release-notes.md
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+            -f tag_name="v$VERSION" \
+            -f target_commitish="$GITHUB_SHA" \
+            --jq .body >> build/release-notes.md
+          cat build/release-notes.md
+
+      - name: Publish the release
+        if: steps.version.outputs.released == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            build/Animation-Switch.dmg \
+            build/Animation-Switch.dmg.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Animation Switch $VERSION" \
+            --notes-file build/release-notes.md
+          echo "Published https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION"

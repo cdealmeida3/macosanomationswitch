@@ -22,7 +22,7 @@ These are the interview answers, numbered as they were asked.
 | Q8 | Restarts | The app restarts Dock and Finder itself, only the processes the change touched, and only once per flip, not once per animation. |
 | Q9 | Launch and drift | "Launch at login" is a menu item, on by default. On launch, if the Master Switch says animations are off, the app re-applies any managed animation that has **Drifted**. |
 | Q10 | Stack and merge gate | Swift and a SwiftUI `MenuBarExtra`. All logic lives in a Swift package with no UI, and a GitHub Actions macOS job is the auto-merge gate ([ADR 0002](./adr/0002-ui-free-core-package-gated-by-macos-ci.md)). |
-| Q11 | Signing | None for now. Build from source, or ad-hoc sign. Developer ID signing can come later if others use the app. |
+| Q11 | Signing | Ad-hoc signing. Releases are ad-hoc-signed `.dmg` files on GitHub Releases ([release plan](./release-plan.md), [ADR 0003](./adr/0003-ad-hoc-signed-dmg-on-github-releases.md)). Developer ID signing and notarization are still not planned. |
 | Q12 | Name | The app is "Animation Switch". The repo keeps its current name. |
 | Q13 | Menu layout | Master Switch at the top, then the toggles grouped by area, then "Launch at login", "Restore all and quit" and "Quit". The menu bar icon shows the state. |
 | Q14 | Toggle changes while off | While animations are off, checking a toggle disables that animation immediately, and unchecking it restores it immediately. |
@@ -120,7 +120,7 @@ Add this as `docs/manual-verification.md` in the implementation, with a results 
 
 ## Out of scope for v1
 
-Presets, a global keyboard shortcut, a CLI, changing Reduce Motion or Reduce Transparency, Mail animations, Launchpad (removed in macOS 26), Spaces switching speed (no setting exists), signed or notarized releases, auto-update, and macOS 15 or earlier.
+Presets, a global keyboard shortcut, a CLI, changing Reduce Motion or Reduce Transparency, Mail animations, Launchpad (removed in macOS 26), Spaces switching speed (no setting exists), Developer ID signed or notarized releases, auto-update, and macOS 15 or earlier. Downloadable releases are covered by the [release plan](./release-plan.md).
 
 ## Suggested order of work
 
