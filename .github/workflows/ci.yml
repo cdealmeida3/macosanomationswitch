@@ -20,9 +20,15 @@ jobs:
       - run: swift test
 
   macos:
-    name: macOS (swift test)
+    name: macOS (swift test, app build)
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v5
       - run: sw_vers && xcodebuild -version && swift --version
       - run: swift test
+      - name: Build the app
+        run: |
+          brew install xcodegen
+          ./scripts/build-app.sh
+          codesign --verify --verbose "build/Animation Switch.app"
+          /usr/libexec/PlistBuddy -c "Print :LSUIElement" "build/Animation Switch.app/Contents/Info.plist"
