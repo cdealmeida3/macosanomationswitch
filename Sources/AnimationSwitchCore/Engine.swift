@@ -67,19 +67,58 @@ public final class Engine {
 
     /// Flips the Master Switch off: disables every Managed Animation.
     public func disableAnimations() -> Report {
-        disable(catalog.filter { isManaged($0.id) }, switchingOff: true)
+        var next = state
+        next.animationsDisabled = true
+        return disable(catalog.filter { isManaged($0.id) }, from: next)
     }
 
     /// Flips the Master Switch on: restores every animation the app disabled.
     public func restoreAnimations() -> Report {
-        restore(catalog.filter { state.originalValues[$0.id] != nil }, switchingOn: true)
+        var next = state
+        next.animationsDisabled = false
+        return restore(catalog.filter { state.originalValues[$0.id] != nil }, from: next)
+    }
+
+    /// Checks or unchecks an Animation Toggle. While animations are on this
+    /// only changes the Managed Animations. While they are off, checking
+    /// disables that animation now and unchecking restores it now.
+    public func setAnimationToggle(_ id: AnimationID, checked: Bool) -> Report {
+        guard let animation = catalog.first(where: { $0.id == id }) else { return status() }
+        var next = state
+        if checked { next.managed.insert(id) } else { next.managed.remove(id) }
+        guard state.animationsDisabled else {
+            do {
+                try stateStore.save(next)
+            } catch {
+                return report([id: .failed("Could not save the change: \(Self.reason(error))")],
+                              restartFailures: [:], warnings: [])
+            }
+            state = next
+            return status()
+        }
+        return checked ? disable([animation], from: next) : restore([animation], from: next)
+    }
+
+    /// Run once at launch. If the Master Switch says animations are off,
+    /// re-applies any Managed Animation that has Drifted back, keeping its
+    /// saved Original Value.
+    public func reapplyDrift() -> Report {
+        guard state.animationsDisabled else { return status() }
+        return disable(catalog.filter { isManaged($0.id) }, from: state)
+    }
+
+    /// Restores every animation the app disabled, whatever the toggles and the
+    /// Master Switch say. Used by "Restore all and quit".
+    public func restoreAll() -> Report {
+        restoreAnimations()
     }
 
     // MARK: - Disabling and restoring
 
-    private func disable(_ animations: [Animation], switchingOff: Bool) -> Report {
-        var next = state
-        if switchingOff { next.animationsDisabled = true }
+    /// Disables `animations`, then makes `next` (with their Original Values
+    /// added) the app's state.
+    private func disable(_ animations: [Animation], from next: AppState) -> Report {
+        var next = next
         var results: [AnimationID: OutcomeResult] = [:]
 
         // Capture Original Values the first time only, and save them before
@@ -109,9 +148,10 @@ public final class Engine {
         return report(results, restartFailures: restart(restarts), warnings: [])
     }
 
-    private func restore(_ animations: [Animation], switchingOn: Bool) -> Report {
-        var next = state
-        if switchingOn { next.animationsDisabled = false }
+    /// Restores `animations`, then makes `next` (with their Original Values
+    /// removed) the app's state.
+    private func restore(_ animations: [Animation], from next: AppState) -> Report {
+        var next = next
         var results: [AnimationID: OutcomeResult] = [:]
         var restarts: Set<RestartTarget> = []
 
