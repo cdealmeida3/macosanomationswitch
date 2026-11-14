@@ -1,0 +1,47 @@
+# XcodeGen spec for the menu bar app. Generate the project with
+#   cd App && xcodegen generate
+# The generated AnimationSwitch.xcodeproj is not committed.
+name: AnimationSwitch
+options:
+  bundleIdPrefix: dev.animationswitch
+  deploymentTarget:
+    macOS: "26.0"
+packages:
+  AnimationSwitch:
+    path: ..
+targets:
+  AnimationSwitch:
+    type: application
+    platform: macOS
+    sources: [Sources]
+    dependencies:
+      - package: AnimationSwitch
+        product: AnimationSwitchCore
+      - package: AnimationSwitch
+        product: AnimationSwitchMac
+    info:
+      path: Info.plist
+      properties:
+        CFBundleName: Animation Switch
+        CFBundleDisplayName: Animation Switch
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        LSUIElement: true
+        NSHumanReadableCopyright: "Open source. See the repository for details."
+    settings:
+      base:
+        PRODUCT_NAME: Animation Switch
+        PRODUCT_BUNDLE_IDENTIFIER: dev.animationswitch.app
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        # Ad-hoc signing: no Apple developer account needed (plan Q11).
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        # The app writes other apps' preference domains, so it can't be sandboxed.
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
+        GENERATE_INFOPLIST_FILE: NO
+    scheme: {}
