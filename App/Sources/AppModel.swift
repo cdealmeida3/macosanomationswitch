@@ -47,7 +47,7 @@ final class AppModel {
 
     var isWorking: Bool { engine != nil }
 
-    func animations(in group: AnimationGroup) -> [Animation] {
+    func animations(in group: AnimationGroup) -> [AnimationSwitchCore.Animation] {
         catalog.filter { $0.group == group }
     }
 

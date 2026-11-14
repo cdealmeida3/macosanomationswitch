@@ -11,7 +11,7 @@ struct MenuView: View {
             masterSwitch
             ForEach(model.warnings, id: \.self) { WarningText($0) }
             Divider()
-            ForEach(AnimationGroup.allCases, id: \.self) { group in
+            ForEach(AnimationGroup.allCases, id: \.self) { (group: AnimationGroup) in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(group.title)
                         .font(.caption.weight(.semibold))
@@ -55,7 +55,7 @@ struct MenuView: View {
         .disabled(!model.isWorking)
     }
 
-    private func row(_ animation: Animation) -> some View {
+    private func row(_ animation: AnimationSwitchCore.Animation) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Toggle(animation.label, isOn: Binding(
                 get: { model.managed.contains(animation.id) },
