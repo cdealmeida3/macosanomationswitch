@@ -27,8 +27,53 @@ jobs:
       - run: sw_vers && xcodebuild -version && swift --version
       - run: swift test
       - name: Build the app
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           brew install xcodegen
           ./scripts/build-app.sh
           codesign --verify --verbose "build/Animation Switch.app"
           /usr/libexec/PlistBuddy -c "Print :LSUIElement" "build/Animation Switch.app/Contents/Info.plist"
+      - name: Check the version and architectures
+        run: |
+          app="build/Animation Switch.app"
+          version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")
+          expected=$(tr -d '[:space:]' < VERSION)
+          echo "CFBundleShortVersionString=$version VERSION=$expected"
+          test "$version" = "$expected"
+          archs=$(lipo -archs "$app/Contents/MacOS/Animation Switch")
+          echo "archs: $archs"
+          case " $archs " in *" arm64 "*) ;; *) echo "arm64 missing"; exit 1 ;; esac
+          case " $archs " in *" x86_64 "*) ;; *) echo "x86_64 missing"; exit 1 ;; esac
+      - name: Make the disk image
+        run: ./scripts/make-dmg.sh
+      - name: Verify the disk image
+        run: ./scripts/verify-dmg.sh
+      - name: Launch the app from the disk image
+        run: |
+          mount=$(mktemp -d)
+          hdiutil attach build/Animation-Switch.dmg -nobrowse -readonly -noautoopen -mountpoint "$mount" >/dev/null
+          copy=$(mktemp -d)
+          ditto "$mount/Animation Switch.app" "$copy/Animation Switch.app"
+          hdiutil detach "$mount" -quiet
+          "$copy/Animation Switch.app/Contents/MacOS/Animation Switch" > "$copy/app.log" 2>&1 &
+          pid=$!
+          sleep 5
+          if kill -0 "$pid" 2>/dev/null; then
+            echo "The app is still running after 5 seconds"
+            kill "$pid"
+            wait "$pid" 2>/dev/null || true
+          else
+            echo "The app exited within 5 seconds"
+            cat "$copy/app.log"
+            exit 1
+          fi
+      - name: Upload the disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: Animation-Switch-dmg
+          path: |
+            build/Animation-Switch.dmg
+            build/Animation-Switch.dmg.sha256
+          retention-days: 7
+          if-no-files-found: error
