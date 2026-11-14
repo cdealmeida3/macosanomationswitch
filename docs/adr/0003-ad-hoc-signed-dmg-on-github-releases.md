@@ -1,0 +1,5 @@
+# Publish ad-hoc-signed disk images on GitHub Releases, released by bumping VERSION
+
+People who want Animation Switch, Carlos included, should not need Xcode to get it, so a GitHub Actions macOS job builds a universal, ad-hoc-signed `.dmg` and attaches it to a GitHub Release. The app is not notarized, because that needs a paid Apple Developer account and signing secrets in the repo, and the app is for Carlos's own Macs first. The cost is that the first launch of each downloaded version is blocked once and has to be allowed with Open Anyway in System Settings → Privacy & Security, which the README explains. If other people start using the app, Developer ID signing and notarization can be added to the same release workflow without changing how releases are triggered.
+
+A release is published when a merged pull request changes the `VERSION` file, not when someone pushes a tag. That fits the repo's rule that every change lands as an auto-merged PR, works from the Claude app where pushing tags is awkward, and gives numbered versions to go back to. The workflow creates the `vX.Y.Z` tag itself, on the commit it built. See [docs/release-plan.md](../release-plan.md).
