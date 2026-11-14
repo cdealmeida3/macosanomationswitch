@@ -1,0 +1,3 @@
+# Keep all logic in a UI-free Swift package, gated by macOS CI
+
+The app is Swift with a SwiftUI menu bar extra, but everything except the menu itself (the catalog of animations, saving original values, disabling, restoring, detecting drift) lives in a Swift package with no AppKit or SwiftUI, talking to preferences and processes through small interfaces that tests replace with fakes. Implementation happens in a Linux cloud container that cannot build a macOS app, and pull requests auto-merge when tests are fully green, so the logic has to be testable without a Mac. A GitHub Actions macOS job that builds the app and runs every test is the gate for auto-merge.
