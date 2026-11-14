@@ -13,12 +13,24 @@ The single control that disables or restores all animations the app manages at o
 _Avoid_: Main toggle, kill switch, global switch
 
 **Animation Toggle**:
-The per-animation control, shown under the master switch, for fine-tuning which animations are disabled.
+The per-animation checkbox under the master switch that decides whether the master switch manages that animation.
 _Avoid_: Tweak, setting, option
 
+**Managed Animation**:
+An animation whose animation toggle is checked, so the master switch disables and restores it. Unchecked animations are left alone.
+_Avoid_: Selected animation, enabled animation
+
 **Restore**:
-Return an animation to how it behaved before the app disabled it.
+Return an animation to its original value.
 _Avoid_: Reset, undo, re-enable
+
+**Original Value**:
+What an animation's setting was, or the fact that it was never set, at the moment the app first changed it. It may be the person's own customisation rather than Apple's default.
+_Avoid_: Default, factory value, backup
+
+**Drift**:
+When something other than the app, such as a macOS update, changes a managed animation back while the master switch says it is disabled.
+_Avoid_: Reset, regression
 
 **Preset**:
 A named combination of animation states the person can switch to in one step. Not in the first version.
