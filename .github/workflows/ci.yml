@@ -19,13 +19,10 @@ jobs:
       - run: swift --version
       - run: swift test
 
-  # Where it runs: a push to main, or a pull request from a branch of this repository, runs on the developer's Mac
-  # (self-hosted runner with the label macbook), which spends nothing and does not wait in GitHub's macOS queue. A
-  # pull request from a fork runs on GitHub's macOS runner, so code from outside never runs on the developer's Mac.
-  # If the Mac is off, its jobs wait until it is back (GitHub cancels a job after a day).
+  # Runs on GitHub's macOS runner.
   macos:
     name: macOS (swift test, app build)
-    runs-on: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted", "macbook"]') || 'macos-26' }}
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
