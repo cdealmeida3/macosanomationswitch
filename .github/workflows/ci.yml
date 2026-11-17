@@ -19,9 +19,14 @@ jobs:
       - run: swift --version
       - run: swift test
 
+  # Where it runs: a push to main, or a pull request from a branch of this repository, runs on the developer's Mac
+  # (self-hosted runner with the label macbook), which spends nothing and does not wait in GitHub's macOS queue. A
+  # pull request from a fork runs on GitHub's macOS runner, so code from outside never runs on the developer's Mac.
+  # If the Mac is off, its jobs wait until it is back (GitHub cancels a job after a day).
   macos:
     name: macOS (swift test, app build)
-    runs-on: macos-26
+    runs-on: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted", "macbook"]') || 'macos-26' }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - run: sw_vers && xcodebuild -version && swift --version
@@ -30,7 +35,8 @@ jobs:
         env:
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          brew install xcodegen
+          # On the developer's Mac XcodeGen is already installed: no Homebrew run there.
+          command -v xcodegen >/dev/null || brew install xcodegen
           ./scripts/build-app.sh
           codesign --verify --verbose "build/Animation Switch.app"
           /usr/libexec/PlistBuddy -c "Print :LSUIElement" "build/Animation Switch.app/Contents/Info.plist"
@@ -49,7 +55,10 @@ jobs:
         run: ./scripts/make-dmg.sh
       - name: Verify the disk image
         run: ./scripts/verify-dmg.sh
+      # Only on GitHub's runner. On the developer's Mac this would start a second Animation Switch next to the one in
+      # use, sharing its saved state: on launch it re-applies drifted settings and may restart Dock and Finder.
       - name: Launch the app from the disk image
+        if: runner.environment == 'github-hosted'
         run: |
           mount=$(mktemp -d)
           hdiutil attach build/Animation-Switch.dmg -nobrowse -readonly -noautoopen -mountpoint "$mount" >/dev/null
