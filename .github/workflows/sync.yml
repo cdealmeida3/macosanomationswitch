@@ -1,15 +1,17 @@
-name: Sync local clone
+name: Sync local clones
 
-# After every merge into main, the developer's Windows computer pulls it into its own clone of this repository,
-# so the copy on that computer is the one on GitHub. It runs only on that computer's self-hosted runner (label
-# angel-pc), so it spends no Actions minutes. A computer that is off runs the job when it comes back (GitHub cancels
-# a job after a day of waiting; the next merge catches up). workflow_dispatch runs it by hand.
+# After every merge into main, each of the developer's computers (the Windows PC and the Mac) pulls it into its
+# own clone of this repository, so the copy on both computers is the one on GitHub. It runs only on the self-hosted
+# runners (one job per computer, picked by its label: angel-pc or macbook), so it spends no Actions minutes. A computer
+# that is off runs its job when it comes back (GitHub cancels a job after a day of waiting; the next merge catches
+# up). workflow_dispatch runs it by hand.
 #
-# Where the clone is: LOCAL_CLONE in the runner's own .env file (C:\actions-runner\macosanomationswitch\.env), not in this
-# repository. Without it the job only says so. The job never overwrites work: a clone with uncommitted changes, on
-# another branch or with local commits that are not on GitHub is fetched only.
+# Where the clone is: LOCAL_CLONE in each runner's own .env file (C:\actions-runner\macosanomationswitch\.env on the Windows PC,
+# ~/actions-runner/macosanomationswitch/.env on the Mac), not in this repository. Without it the job only says so. The job never
+# overwrites work: a clone with uncommitted changes, on another branch or with local commits that are not on GitHub
+# is fetched only.
 #
-# This workflow must never run on pull_request: the runner is the developer's own computer.
+# This workflow must never run on pull_request: the runners are the developer's own computers.
 on:
   push:
     branches: [ "main" ]
@@ -28,11 +30,15 @@ jobs:
   pull:
     # Not in a fork: a fork has no such runner and the job would wait a day.
     if: github.repository == 'cdealmeida3/macosanomationswitch'
-    name: pull (angel-pc)
-    runs-on: [ self-hosted, angel-pc ]
+    strategy:
+      fail-fast: false
+      matrix:
+        computer: [ angel-pc, macbook ]
+    name: pull (${{ matrix.computer }})
+    runs-on: [ self-hosted, "${{ matrix.computer }}" ]
     timeout-minutes: 5
     concurrency:
-      group: ${{ github.workflow }}-angel-pc
+      group: ${{ github.workflow }}-${{ matrix.computer }}
     steps:
       - name: Pull main into the local clone
         env:
